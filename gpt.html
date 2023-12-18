@@ -1,0 +1,444 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1080px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 1080px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "blue", "id": "Corpus", "label": "Corpus\nNumber of children: 15", "shape": "dot", "size": 10, "title": "\u003c__main__.Knowlet object at 0x7f8d584d45b0\u003e"}, {"color": "gray", "id": "neg/cv004_12641.txt", "label": "neg/cv004_12641.txt\nNumber of children: 26", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7190\u003e"}, {"color": "gray", "id": "neg/cv003_12683.txt", "label": "neg/cv003_12683.txt\nNumber of children: 12", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd75b0\u003e"}, {"color": "gray", "id": "neg/cv002_17424.txt", "label": "neg/cv002_17424.txt\nNumber of children: 34", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd73d0\u003e"}, {"color": "gray", "id": "neg/cv001_19502.txt", "label": "neg/cv001_19502.txt\nNumber of children: 18", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7ee0\u003e"}, {"color": "gray", "id": "neg/cv000_29416.txt", "label": "neg/cv000_29416.txt\nNumber of children: 11", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb070\u003e"}, {"color": "blue", "id": "10-24-40s_706posts.xml", "label": "10-24-40s_706posts.xml\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb550\u003e"}, {"color": "blue", "id": "10-19-adults_706posts.xml", "label": "10-19-adults_706posts.xml\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb730\u003e"}, {"color": "gray", "id": "10-19-40s_686posts.xml", "label": "10-19-40s_686posts.xml\nNumber of children: 10", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb0d0\u003e"}, {"color": "gray", "id": "10-19-30s_705posts.xml", "label": "10-19-30s_705posts.xml\nNumber of children: 5", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb8e0\u003e"}, {"color": "blue", "id": "10-19-20s_706posts.xml", "label": "10-19-20s_706posts.xml\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb6d0\u003e"}, {"color": "gray", "id": "blake-poems.txt", "label": "blake-poems.txt\nNumber of children: 8", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbbc70\u003e"}, {"color": "green", "id": "bible-kjv.txt", "label": "bible-kjv.txt\nNumber of children: 22", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb820\u003e"}, {"color": "gray", "id": "austen-sense.txt", "label": "austen-sense.txt\nNumber of children: 9", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbbbe0\u003e"}, {"color": "gray", "id": "austen-persuasion.txt", "label": "austen-persuasion.txt\nNumber of children: 16", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb400\u003e"}, {"color": "gray", "id": "austen-emma.txt", "label": "austen-emma.txt\nNumber of children: 9", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdbb700\u003e"}, {"color": "blue", "id": "sorrow", "label": "sorrow\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7d30\u003e"}, {"color": "blue", "id": "grief", "label": "grief\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7700\u003e"}, {"color": "blue", "id": "self-esteem", "label": "self-esteem\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9de4250\u003e"}, {"color": "blue", "id": "friendship", "label": "friendship\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9de4a60\u003e"}, {"color": "blue", "id": "family", "label": "family\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9de4760\u003e"}, {"color": "blue", "id": "marriage", "label": "marriage\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9de48e0\u003e"}, {"color": "blue", "id": "Miss Taylor", "label": "Miss Taylor\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9de4eb0\u003e"}, {"color": "blue", "id": "Jane Austen", "label": "Jane Austen\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8b9080d0\u003e"}, {"color": "blue", "id": "Emma Woodhouse", "label": "Emma Woodhouse\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8b9080a0\u003e"}, {"color": "blue", "id": "baronet", "label": "baronet\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdca760\u003e"}, {"color": "blue", "id": "loyalty", "label": "loyalty\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdca160\u003e"}, {"color": "blue", "id": "high sheriff", "label": "high sheriff\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcafa0\u003e"}, {"color": "blue", "id": "Dugdale", "label": "Dugdale\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcaf70\u003e"}, {"color": "blue", "id": "Cheshire", "label": "Cheshire\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcae80\u003e"}, {"color": "blue", "id": "Uppercross", "label": "Uppercross\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcaa00\u003e"}, {"color": "blue", "id": "Charles Musgrove", "label": "Charles Musgrove\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdca340\u003e"}, {"color": "blue", "id": "Mary Elliot", "label": "Mary Elliot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdca0a0\u003e"}, {"color": "blue", "id": "Anne Elliot", "label": "Anne Elliot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcacd0\u003e"}, {"color": "blue", "id": "Elizabeth Elliot", "label": "Elizabeth Elliot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7ac0\u003e"}, {"color": "blue", "id": "patents", "label": "patents\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7b50\u003e"}, {"color": "blue", "id": "Baronetage", "label": "Baronetage\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7a30\u003e"}, {"color": "blue", "id": "Kellynch Hall", "label": "Kellynch Hall\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7220\u003e"}, {"color": "blue", "id": "Sir Walter Elliot", "label": "Sir Walter Elliot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd7970\u003e"}, {"color": "blue", "id": "Persuasion", "label": "Persuasion\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd70d0\u003e"}, {"color": "blue", "id": "father", "label": "father\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d34538fd0\u003e"}, {"color": "blue", "id": "mother", "label": "mother\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d34538610\u003e"}, {"color": "blue", "id": "wealth", "label": "wealth\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdcaa90\u003e"}, {"color": "blue", "id": "sisters", "label": "sisters\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdca940\u003e"}, {"color": "blue", "id": "inheritance", "label": "inheritance\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3837b550\u003e"}, {"color": "blue", "id": "Henry Dashwood", "label": "Henry Dashwood\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3837be20\u003e"}, {"color": "blue", "id": "Norland estate", "label": "Norland estate\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3837b040\u003e"}, {"color": "blue", "id": "Dashwood family", "label": "Dashwood family\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3837b2e0\u003e"}, {"color": "blue", "id": "years", "label": "years\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd61c0\u003e"}, {"color": "blue", "id": "seasons", "label": "seasons\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd60a0\u003e"}, {"color": "blue", "id": "signs", "label": "signs\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6dc0\u003e"}, {"color": "blue", "id": "night", "label": "night\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6ee0\u003e"}, {"color": "blue", "id": "day", "label": "day\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6ac0\u003e"}, {"color": "blue", "id": "lights", "label": "lights\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6310\u003e"}, {"color": "blue", "id": "seed", "label": "seed\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6400\u003e"}, {"color": "blue", "id": "fruit tree", "label": "fruit tree\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6b20\u003e"}, {"color": "blue", "id": "herb", "label": "herb\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6d90\u003e"}, {"color": "blue", "id": "grass", "label": "grass\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6790\u003e"}, {"color": "blue", "id": "seas", "label": "seas\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca313bb0\u003e"}, {"color": "blue", "id": "dry land", "label": "dry land\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca313580\u003e"}, {"color": "blue", "id": "waters", "label": "waters\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca3139a0\u003e"}, {"color": "blue", "id": "firmament", "label": "firmament\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867cd30\u003e"}, {"color": "blue", "id": "darkness", "label": "darkness\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867cb50\u003e"}, {"color": "blue", "id": "light", "label": "light\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867cc10\u003e"}, {"color": "blue", "id": "earth", "label": "earth\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867c9a0\u003e"}, {"color": "blue", "id": "heaven", "label": "heaven\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867c400\u003e"}, {"color": "blue", "id": "God", "label": "God\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867cee0\u003e"}, {"color": "blue", "id": "Genesis", "label": "Genesis\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5867ca90\u003e"}, {"color": "blue", "id": "Old Testament", "label": "Old Testament\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d7d4c3130\u003e"}, {"color": "blue", "id": "King James Bible", "label": "King James Bible\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3837bee0\u003e"}, {"color": "blue", "id": "The Lamb", "label": "The Lamb\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba950d0\u003e"}, {"color": "blue", "id": "The Echoing Green", "label": "The Echoing Green\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95a00\u003e"}, {"color": "blue", "id": "The Shepherd", "label": "The Shepherd\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95d30\u003e"}, {"color": "blue", "id": "Thel", "label": "Thel\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd67c0\u003e"}, {"color": "blue", "id": "Songs of Experience", "label": "Songs of Experience\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6250\u003e"}, {"color": "blue", "id": "Songs of Innocence", "label": "Songs of Innocence\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd64f0\u003e"}, {"color": "blue", "id": "Poems", "label": "Poems\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6af0\u003e"}, {"color": "blue", "id": "William Blake", "label": "William Blake\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58bd6c40\u003e"}, {"color": "blue", "id": "stupid", "label": "stupid\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95490\u003e"}, {"color": "blue", "id": "statement", "label": "statement\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95280\u003e"}, {"color": "blue", "id": "TV", "label": "TV\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95940\u003e"}, {"color": "blue", "id": "noise", "label": "noise\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95fd0\u003e"}, {"color": "blue", "id": "political ads", "label": "political ads\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8ddba95df0\u003e"}, {"color": "blue", "id": "hiya", "label": "hiya\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d345305e0\u003e"}, {"color": "blue", "id": "lol", "label": "lol\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3970\u003e"}, {"color": "blue", "id": "JOIN", "label": "JOIN\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3130\u003e"}, {"color": "blue", "id": "dentist", "label": "dentist\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3070\u003e"}, {"color": "blue", "id": "sugar", "label": "sugar\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3160\u003e"}, {"color": "blue", "id": "get", "label": "get\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3940\u003e"}, {"color": "blue", "id": "baby", "label": "baby\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3040\u003e"}, {"color": "blue", "id": "bomb", "label": "bomb\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3d30\u003e"}, {"color": "blue", "id": "love", "label": "love\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3d00\u003e"}, {"color": "blue", "id": "hi", "label": "hi\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc3100\u003e"}, {"color": "blue", "id": "secret", "label": "secret\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78cf17c0\u003e"}, {"color": "blue", "id": "chase scenes", "label": "chase scenes\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2d820\u003e"}, {"color": "blue", "id": "fantasy world", "label": "fantasy world\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2d220\u003e"}, {"color": "blue", "id": "jumbled plot", "label": "jumbled plot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2d850\u003e"}, {"color": "blue", "id": "mind-fuck movie", "label": "mind-fuck movie\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2d6d0\u003e"}, {"color": "blue", "id": "nightmares", "label": "nightmares\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d34530730\u003e"}, {"color": "blue", "id": "girlfriend", "label": "girlfriend\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d345306d0\u003e"}, {"color": "blue", "id": "death", "label": "death\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d345303a0\u003e"}, {"color": "blue", "id": "accident", "label": "accident\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8cdc39a0\u003e"}, {"color": "blue", "id": "church party", "label": "church party\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5817e8e0\u003e"}, {"color": "blue", "id": "teen couples", "label": "teen couples\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da982e670\u003e"}, {"color": "blue", "id": "body parts", "label": "body parts\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c9820\u003e"}, {"color": "blue", "id": "gore shots", "label": "gore shots\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c92e0\u003e"}, {"color": "blue", "id": "CGI", "label": "CGI\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c9340\u003e"}, {"color": "blue", "id": "Stan Winston\u0027s robot design", "label": "Stan Winston\u0027s robot design\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c9d60\u003e"}, {"color": "blue", "id": "acting", "label": "acting\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c98b0\u003e"}, {"color": "blue", "id": "robots", "label": "robots\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c94c0\u003e"}, {"color": "blue", "id": "Donald Sutherland", "label": "Donald Sutherland\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d585c9be0\u003e"}, {"color": "blue", "id": "origin of ship takeover", "label": "origin of ship takeover\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb398e0\u003e"}, {"color": "blue", "id": "crew\u0027s purpose", "label": "crew\u0027s purpose\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb39940\u003e"}, {"color": "blue", "id": "substance", "label": "substance\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb39430\u003e"}, {"color": "blue", "id": "action sequences", "label": "action sequences\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb39ac0\u003e"}, {"color": "blue", "id": "gore", "label": "gore\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3b7819a0\u003e"}, {"color": "blue", "id": "power", "label": "power\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3b781b80\u003e"}, {"color": "blue", "id": "deserted Russian tech ship", "label": "deserted Russian tech ship\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3b781400\u003e"}, {"color": "blue", "id": "tugboat crew", "label": "tugboat crew\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3b781610\u003e"}, {"color": "blue", "id": "William Baldwin", "label": "William Baldwin\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d3b781640\u003e"}, {"color": "blue", "id": "Jamie Lee Curtis", "label": "Jamie Lee Curtis\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78cf1160\u003e"}, {"color": "blue", "id": "y2k bug", "label": "y2k bug\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca2118b0\u003e"}, {"color": "blue", "id": "older mindset", "label": "older mindset\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e490\u003e"}, {"color": "blue", "id": "spoon-fed information", "label": "spoon-fed information\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5ec40\u003e"}, {"color": "blue", "id": "juvenile", "label": "juvenile\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5edc0\u003e"}, {"color": "blue", "id": "american \u0027r\u0027 rating", "label": "american \u0027r\u0027 rating\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5eac0\u003e"}, {"color": "blue", "id": "teenage mindset", "label": "teenage mindset\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e2e0\u003e"}, {"color": "blue", "id": "hip soundtrack", "label": "hip soundtrack\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e2b0\u003e"}, {"color": "blue", "id": "young cast", "label": "young cast\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5ec70\u003e"}, {"color": "blue", "id": "giovanni ribisi", "label": "giovanni ribisi\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5ebe0\u003e"}, {"color": "blue", "id": "omar epps", "label": "omar epps\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d58859f40\u003e"}, {"color": "blue", "id": "claire danes", "label": "claire danes\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d588598b0\u003e"}, {"color": "blue", "id": "characters", "label": "characters\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96e2cd0\u003e"}, {"color": "blue", "id": "television show plot elements", "label": "television show plot elements\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96e2be0\u003e"}, {"color": "blue", "id": "clich ?", "label": "clich ?\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2ba60\u003e"}, {"color": "blue", "id": "music video", "label": "music video\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b730\u003e"}, {"color": "blue", "id": "hour-long cop show", "label": "hour-long cop show\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b8b0\u003e"}, {"color": "blue", "id": "costumes", "label": "costumes\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b5b0\u003e"}, {"color": "blue", "id": "hair", "label": "hair\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b340\u003e"}, {"color": "blue", "id": "slick production", "label": "slick production\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b880\u003e"}, {"color": "blue", "id": "stuff blowing up", "label": "stuff blowing up\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b100\u003e"}, {"color": "blue", "id": "car chases", "label": "car chases\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b280\u003e"}, {"color": "blue", "id": "cute outfits", "label": "cute outfits\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b850\u003e"}, {"color": "blue", "id": "claire dane\u0027s hair", "label": "claire dane\u0027s hair\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2be50\u003e"}, {"color": "blue", "id": "cool music", "label": "cool music\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2be80\u003e"}, {"color": "blue", "id": "quick cuts", "label": "quick cuts\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b7f0\u003e"}, {"color": "blue", "id": "ads", "label": "ads\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b520\u003e"}, {"color": "blue", "id": "evidence", "label": "evidence\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2b550\u003e"}, {"color": "blue", "id": "undercover", "label": "undercover\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dcbb2baf0\u003e"}, {"color": "blue", "id": "police", "label": "police\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d4dd5dc10\u003e"}, {"color": "blue", "id": "reformed criminals", "label": "reformed criminals\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d4dd5dd90\u003e"}, {"color": "blue", "id": "mod squad", "label": "mod squad\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d4dd5ddc0\u003e"}, {"color": "blue", "id": "television show", "label": "television show\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d4dd5dca0\u003e"}, {"color": "blue", "id": "timex indiglo watch", "label": "timex indiglo watch\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca0f4070\u003e"}, {"color": "blue", "id": "movies", "label": "movies\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8dca0f41c0\u003e"}, {"color": "blue", "id": "Animation", "label": "Animation\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7cd0\u003e"}, {"color": "blue", "id": "Dragon", "label": "Dragon\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d72e0\u003e"}, {"color": "blue", "id": "Garrett", "label": "Garrett\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7ee0\u003e"}, {"color": "blue", "id": "Excalibur", "label": "Excalibur\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7d90\u003e"}, {"color": "blue", "id": "Gary Oldman", "label": "Gary Oldman\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7e20\u003e"}, {"color": "blue", "id": "Kayley", "label": "Kayley\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7fa0\u003e"}, {"color": "blue", "id": "Pocahontas", "label": "Pocahontas\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d70a0\u003e"}, {"color": "blue", "id": "Hercules", "label": "Hercules\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e8b0\u003e"}, {"color": "blue", "id": "Anastasia", "label": "Anastasia\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5ed00\u003e"}, {"color": "blue", "id": "Disney", "label": "Disney\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5ef40\u003e"}, {"color": "blue", "id": "Warner Bros", "label": "Warner Bros\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e790\u003e"}, {"color": "blue", "id": "quest for camelot", "label": "quest for camelot\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d78c5e460\u003e"}, {"color": "blue", "id": "opening sequence", "label": "opening sequence\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d49df41c0\u003e"}, {"color": "blue", "id": "obvious", "label": "obvious\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d5bcb0970\u003e"}, {"color": "blue", "id": "guesswork", "label": "guesswork\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8db857e760\u003e"}, {"color": "blue", "id": "Brooke Daniels", "label": "Brooke Daniels\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9d1e8b0\u003e"}, {"color": "blue", "id": "Daryl Gleason", "label": "Daryl Gleason\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d584d4820\u003e"}, {"color": "blue", "id": "Jay Underwood", "label": "Jay Underwood\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d584d4dc0\u003e"}, {"color": "blue", "id": "actor", "label": "actor\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d584d4640\u003e"}, {"color": "blue", "id": "men", "label": "men\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d584d4ee0\u003e"}, {"color": "blue", "id": "stalkers", "label": "stalkers\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9d8e400\u003e"}, {"color": "blue", "id": "statistics", "label": "statistics\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9d8e160\u003e"}, {"color": "blue", "id": "narrator", "label": "narrator\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da9d8e9d0\u003e"}, {"color": "blue", "id": "suspense", "label": "suspense\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f790\u003e"}, {"color": "blue", "id": "nudity", "label": "nudity\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954fe20\u003e"}, {"color": "blue", "id": "inexpensive", "label": "inexpensive\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f7c0\u003e"}, {"color": "blue", "id": "direct-to-video", "label": "direct-to-video\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f040\u003e"}, {"color": "blue", "id": "film industry", "label": "film industry\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f0a0\u003e"}, {"color": "blue", "id": "spurned psychos", "label": "spurned psychos\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f8b0\u003e"}, {"color": "blue", "id": "kills", "label": "kills\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f2e0\u003e"}, {"color": "blue", "id": "pictures", "label": "pictures\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8d8954f610\u003e"}, {"color": "blue", "id": "restauranteur", "label": "restauranteur\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7970\u003e"}, {"color": "blue", "id": "boy", "label": "boy\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d76a0\u003e"}, {"color": "blue", "id": "psychotherapy", "label": "psychotherapy\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7850\u003e"}, {"color": "blue", "id": "mentally unstable man", "label": "mentally unstable man\nNumber of children: 0", "shape": "dot", "size": 2, "title": "\u003c__main__.Knowlet object at 0x7f8da96d7100\u003e"}]);
+                  edges = new vis.DataSet([{"from": "Corpus", "to": "neg/cv004_12641.txt"}, {"from": "Corpus", "to": "neg/cv003_12683.txt"}, {"from": "Corpus", "to": "neg/cv002_17424.txt"}, {"from": "Corpus", "to": "neg/cv001_19502.txt"}, {"from": "Corpus", "to": "neg/cv000_29416.txt"}, {"from": "Corpus", "to": "10-24-40s_706posts.xml"}, {"from": "Corpus", "to": "10-19-adults_706posts.xml"}, {"from": "Corpus", "to": "10-19-40s_686posts.xml"}, {"from": "Corpus", "to": "10-19-30s_705posts.xml"}, {"from": "Corpus", "to": "10-19-20s_706posts.xml"}, {"from": "Corpus", "to": "blake-poems.txt"}, {"from": "Corpus", "to": "bible-kjv.txt"}, {"from": "Corpus", "to": "austen-sense.txt"}, {"from": "Corpus", "to": "austen-persuasion.txt"}, {"from": "Corpus", "to": "austen-emma.txt"}, {"from": "austen-emma.txt", "to": "sorrow"}, {"from": "austen-emma.txt", "to": "grief"}, {"from": "austen-emma.txt", "to": "self-esteem"}, {"from": "austen-emma.txt", "to": "friendship"}, {"from": "austen-emma.txt", "to": "family"}, {"from": "austen-emma.txt", "to": "marriage"}, {"from": "austen-emma.txt", "to": "Miss Taylor"}, {"from": "austen-emma.txt", "to": "Jane Austen"}, {"from": "austen-emma.txt", "to": "Emma Woodhouse"}, {"from": "austen-persuasion.txt", "to": "baronet"}, {"from": "austen-persuasion.txt", "to": "loyalty"}, {"from": "austen-persuasion.txt", "to": "high sheriff"}, {"from": "austen-persuasion.txt", "to": "Dugdale"}, {"from": "austen-persuasion.txt", "to": "Cheshire"}, {"from": "austen-persuasion.txt", "to": "Uppercross"}, {"from": "austen-persuasion.txt", "to": "Charles Musgrove"}, {"from": "austen-persuasion.txt", "to": "Mary Elliot"}, {"from": "austen-persuasion.txt", "to": "Anne Elliot"}, {"from": "austen-persuasion.txt", "to": "Elizabeth Elliot"}, {"from": "austen-persuasion.txt", "to": "patents"}, {"from": "austen-persuasion.txt", "to": "Baronetage"}, {"from": "austen-persuasion.txt", "to": "Kellynch Hall"}, {"from": "austen-persuasion.txt", "to": "Sir Walter Elliot"}, {"from": "austen-persuasion.txt", "to": "Jane Austen"}, {"from": "austen-persuasion.txt", "to": "Persuasion"}, {"from": "austen-sense.txt", "to": "father"}, {"from": "austen-sense.txt", "to": "mother"}, {"from": "austen-sense.txt", "to": "marriage"}, {"from": "austen-sense.txt", "to": "wealth"}, {"from": "austen-sense.txt", "to": "sisters"}, {"from": "austen-sense.txt", "to": "inheritance"}, {"from": "austen-sense.txt", "to": "Henry Dashwood"}, {"from": "austen-sense.txt", "to": "Norland estate"}, {"from": "austen-sense.txt", "to": "Dashwood family"}, {"from": "bible-kjv.txt", "to": "years"}, {"from": "bible-kjv.txt", "to": "seasons"}, {"from": "bible-kjv.txt", "to": "signs"}, {"from": "bible-kjv.txt", "to": "night"}, {"from": "bible-kjv.txt", "to": "day"}, {"from": "bible-kjv.txt", "to": "lights"}, {"from": "bible-kjv.txt", "to": "seed"}, {"from": "bible-kjv.txt", "to": "fruit tree"}, {"from": "bible-kjv.txt", "to": "herb"}, {"from": "bible-kjv.txt", "to": "grass"}, {"from": "bible-kjv.txt", "to": "seas"}, {"from": "bible-kjv.txt", "to": "dry land"}, {"from": "bible-kjv.txt", "to": "waters"}, {"from": "bible-kjv.txt", "to": "firmament"}, {"from": "bible-kjv.txt", "to": "darkness"}, {"from": "bible-kjv.txt", "to": "light"}, {"from": "bible-kjv.txt", "to": "earth"}, {"from": "bible-kjv.txt", "to": "heaven"}, {"from": "bible-kjv.txt", "to": "God"}, {"from": "bible-kjv.txt", "to": "Genesis"}, {"from": "bible-kjv.txt", "to": "Old Testament"}, {"from": "bible-kjv.txt", "to": "King James Bible"}, {"from": "blake-poems.txt", "to": "The Lamb"}, {"from": "blake-poems.txt", "to": "The Echoing Green"}, {"from": "blake-poems.txt", "to": "The Shepherd"}, {"from": "blake-poems.txt", "to": "Thel"}, {"from": "blake-poems.txt", "to": "Songs of Experience"}, {"from": "blake-poems.txt", "to": "Songs of Innocence"}, {"from": "blake-poems.txt", "to": "Poems"}, {"from": "blake-poems.txt", "to": "William Blake"}, {"from": "10-19-30s_705posts.xml", "to": "stupid"}, {"from": "10-19-30s_705posts.xml", "to": "statement"}, {"from": "10-19-30s_705posts.xml", "to": "TV"}, {"from": "10-19-30s_705posts.xml", "to": "noise"}, {"from": "10-19-30s_705posts.xml", "to": "political ads"}, {"from": "10-19-40s_686posts.xml", "to": "hiya"}, {"from": "10-19-40s_686posts.xml", "to": "lol"}, {"from": "10-19-40s_686posts.xml", "to": "JOIN"}, {"from": "10-19-40s_686posts.xml", "to": "dentist"}, {"from": "10-19-40s_686posts.xml", "to": "sugar"}, {"from": "10-19-40s_686posts.xml", "to": "get"}, {"from": "10-19-40s_686posts.xml", "to": "baby"}, {"from": "10-19-40s_686posts.xml", "to": "bomb"}, {"from": "10-19-40s_686posts.xml", "to": "love"}, {"from": "10-19-40s_686posts.xml", "to": "hi"}, {"from": "neg/cv000_29416.txt", "to": "secret"}, {"from": "neg/cv000_29416.txt", "to": "chase scenes"}, {"from": "neg/cv000_29416.txt", "to": "fantasy world"}, {"from": "neg/cv000_29416.txt", "to": "jumbled plot"}, {"from": "neg/cv000_29416.txt", "to": "mind-fuck movie"}, {"from": "neg/cv000_29416.txt", "to": "nightmares"}, {"from": "neg/cv000_29416.txt", "to": "girlfriend"}, {"from": "neg/cv000_29416.txt", "to": "death"}, {"from": "neg/cv000_29416.txt", "to": "accident"}, {"from": "neg/cv000_29416.txt", "to": "church party"}, {"from": "neg/cv000_29416.txt", "to": "teen couples"}, {"from": "neg/cv001_19502.txt", "to": "body parts"}, {"from": "neg/cv001_19502.txt", "to": "gore shots"}, {"from": "neg/cv001_19502.txt", "to": "CGI"}, {"from": "neg/cv001_19502.txt", "to": "Stan Winston\u0027s robot design"}, {"from": "neg/cv001_19502.txt", "to": "acting"}, {"from": "neg/cv001_19502.txt", "to": "robots"}, {"from": "neg/cv001_19502.txt", "to": "Donald Sutherland"}, {"from": "neg/cv001_19502.txt", "to": "origin of ship takeover"}, {"from": "neg/cv001_19502.txt", "to": "crew\u0027s purpose"}, {"from": "neg/cv001_19502.txt", "to": "substance"}, {"from": "neg/cv001_19502.txt", "to": "action sequences"}, {"from": "neg/cv001_19502.txt", "to": "gore"}, {"from": "neg/cv001_19502.txt", "to": "power"}, {"from": "neg/cv001_19502.txt", "to": "deserted Russian tech ship"}, {"from": "neg/cv001_19502.txt", "to": "tugboat crew"}, {"from": "neg/cv001_19502.txt", "to": "William Baldwin"}, {"from": "neg/cv001_19502.txt", "to": "Jamie Lee Curtis"}, {"from": "neg/cv001_19502.txt", "to": "y2k bug"}, {"from": "neg/cv002_17424.txt", "to": "older mindset"}, {"from": "neg/cv002_17424.txt", "to": "spoon-fed information"}, {"from": "neg/cv002_17424.txt", "to": "juvenile"}, {"from": "neg/cv002_17424.txt", "to": "american \u0027r\u0027 rating"}, {"from": "neg/cv002_17424.txt", "to": "teenage mindset"}, {"from": "neg/cv002_17424.txt", "to": "hip soundtrack"}, {"from": "neg/cv002_17424.txt", "to": "young cast"}, {"from": "neg/cv002_17424.txt", "to": "giovanni ribisi"}, {"from": "neg/cv002_17424.txt", "to": "omar epps"}, {"from": "neg/cv002_17424.txt", "to": "claire danes"}, {"from": "neg/cv002_17424.txt", "to": "acting"}, {"from": "neg/cv002_17424.txt", "to": "characters"}, {"from": "neg/cv002_17424.txt", "to": "television show plot elements"}, {"from": "neg/cv002_17424.txt", "to": "clich ?"}, {"from": "neg/cv002_17424.txt", "to": "music video"}, {"from": "neg/cv002_17424.txt", "to": "hour-long cop show"}, {"from": "neg/cv002_17424.txt", "to": "costumes"}, {"from": "neg/cv002_17424.txt", "to": "hair"}, {"from": "neg/cv002_17424.txt", "to": "slick production"}, {"from": "neg/cv002_17424.txt", "to": "stuff blowing up"}, {"from": "neg/cv002_17424.txt", "to": "car chases"}, {"from": "neg/cv002_17424.txt", "to": "cute outfits"}, {"from": "neg/cv002_17424.txt", "to": "claire dane\u0027s hair"}, {"from": "neg/cv002_17424.txt", "to": "cool music"}, {"from": "neg/cv002_17424.txt", "to": "quick cuts"}, {"from": "neg/cv002_17424.txt", "to": "ads"}, {"from": "neg/cv002_17424.txt", "to": "evidence"}, {"from": "neg/cv002_17424.txt", "to": "undercover"}, {"from": "neg/cv002_17424.txt", "to": "police"}, {"from": "neg/cv002_17424.txt", "to": "reformed criminals"}, {"from": "neg/cv002_17424.txt", "to": "mod squad"}, {"from": "neg/cv002_17424.txt", "to": "television show"}, {"from": "neg/cv002_17424.txt", "to": "timex indiglo watch"}, {"from": "neg/cv002_17424.txt", "to": "movies"}, {"from": "neg/cv003_12683.txt", "to": "Animation"}, {"from": "neg/cv003_12683.txt", "to": "Dragon"}, {"from": "neg/cv003_12683.txt", "to": "Garrett"}, {"from": "neg/cv003_12683.txt", "to": "Excalibur"}, {"from": "neg/cv003_12683.txt", "to": "Gary Oldman"}, {"from": "neg/cv003_12683.txt", "to": "Kayley"}, {"from": "neg/cv003_12683.txt", "to": "Pocahontas"}, {"from": "neg/cv003_12683.txt", "to": "Hercules"}, {"from": "neg/cv003_12683.txt", "to": "Anastasia"}, {"from": "neg/cv003_12683.txt", "to": "Disney"}, {"from": "neg/cv003_12683.txt", "to": "Warner Bros"}, {"from": "neg/cv003_12683.txt", "to": "quest for camelot"}, {"from": "neg/cv004_12641.txt", "to": "opening sequence"}, {"from": "neg/cv004_12641.txt", "to": "obvious"}, {"from": "neg/cv004_12641.txt", "to": "guesswork"}, {"from": "neg/cv004_12641.txt", "to": "Brooke Daniels"}, {"from": "neg/cv004_12641.txt", "to": "Daryl Gleason"}, {"from": "neg/cv004_12641.txt", "to": "Jay Underwood"}, {"from": "neg/cv004_12641.txt", "to": "actor"}, {"from": "neg/cv004_12641.txt", "to": "men"}, {"from": "neg/cv004_12641.txt", "to": "stalkers"}, {"from": "neg/cv004_12641.txt", "to": "statistics"}, {"from": "neg/cv004_12641.txt", "to": "narrator"}, {"from": "neg/cv004_12641.txt", "to": "suspense"}, {"from": "neg/cv004_12641.txt", "to": "nudity"}, {"from": "neg/cv004_12641.txt", "to": "inexpensive"}, {"from": "neg/cv004_12641.txt", "to": "direct-to-video"}, {"from": "neg/cv004_12641.txt", "to": "film industry"}, {"from": "neg/cv004_12641.txt", "to": "spurned psychos"}, {"from": "neg/cv004_12641.txt", "to": "kills"}, {"from": "neg/cv004_12641.txt", "to": "pictures"}, {"from": "neg/cv004_12641.txt", "to": "restauranteur"}, {"from": "neg/cv004_12641.txt", "to": "mother"}, {"from": "neg/cv004_12641.txt", "to": "love"}, {"from": "neg/cv004_12641.txt", "to": "accident"}, {"from": "neg/cv004_12641.txt", "to": "boy"}, {"from": "neg/cv004_12641.txt", "to": "psychotherapy"}, {"from": "neg/cv004_12641.txt", "to": "mentally unstable man"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
