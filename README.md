@@ -33,6 +33,10 @@ Knowlets are designed as self-contained network visualizations and knowledge con
 4. **Visualization:** Network graph to identify common topics and visualize sentiment.
 5. **Bug Note:** Currently addressing a visualization bug related to the "__str__" function in Knowlets.
 
+## Visualizations
+- [GPT-Based Visualization](https://htmlpreview.github.io/?https://github.com/niksrid/knowlets/blob/main/gpt.html)
+- [GPT-2 Based Visualization](https://htmlpreview.github.io/?https://github.com/niksrid/knowlets/blob/main/gpt-2.html)
+
 ## Future Directions
 - **Querying Knowlets:** Implement complex queries for data retrieval.
 - **Dynamic Networks:** Enable Knowlets to integrate into various networks, enhancing modularity.
