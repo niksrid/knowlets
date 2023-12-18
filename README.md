@@ -34,8 +34,8 @@ Knowlets are designed as self-contained network visualizations and knowledge con
 5. **Bug Note:** Currently addressing a visualization bug related to the "__str__" function in Knowlets.
 
 ## Visualizations
-- [GPT-Based Visualization](https://htmlpreview.github.io/?https://github.com/niksrid/knowlets/blob/main/gpt.html)
-- [GPT-2 Based Visualization](https://htmlpreview.github.io/?https://github.com/niksrid/knowlets/blob/main/gpt-2.html)
+- [GPT-Based Visualization](http://niksrid.me/knowlets-gpt-2.html)
+- [GPT-2 Based Visualization](http://niksrid.me/knowlets-gpt.html)
 
 ## Future Directions
 - **Querying Knowlets:** Implement complex queries for data retrieval.
